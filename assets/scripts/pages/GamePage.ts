@@ -167,6 +167,7 @@ export class GamePage extends BasePage {
         const ex = !!session.spec.extreme;
         const rules = this.hell ? { lockCorrect: false, hints: false, looks: tileLooks(canvas.data, canvas.w, session.spec.grid) } : ex ? { looks: tileLooks(canvas.data, canvas.w, session.spec.grid) } : {};
         this.pm = new PuzzleManager(session.spec, undefined, fixed, rules);
+        this.board.setTheme(gm.shop.boardTheme());
         this.board.start(this.pm);
         this.board.setEnabled(true);
         const art = this.gm.resolveArt(session.spec.imageId);
@@ -255,6 +256,19 @@ export class GamePage extends BasePage {
             return;
         }
         if (this.pm.hintsLeft <= 0) {
+            // 提示券：升级礼物和兑换所里换来的；极限模式明确写了“提示仅 1 次”，不能用券
+            const tokens = gm.shop.hintTokens();
+            if (tokens > 0 && !this.pm.extreme) {
+                this.sm.confirm('提示用完啦', `用 1 张提示券换 1 次提示？（剩 ${tokens} 张；用提示会限制本局最高星级）`, [
+                    { text: '不用了', style: 'secondary' },
+                    { text: '用提示券', style: 'primary', onClick: () => this.useToken() },
+                ]);
+                return;
+            }
+            if (this.pm.extreme && tokens > 0) {
+                this.sm.toast('极限模式只有 1 次提示，不能用提示券');
+                return;
+            }
             if (gm.ads.isRewardedAvailable()) {
                 this.sm.confirm('提示用完啦', '观看一段激励视频，可获得 1 次额外提示（不看也不影响继续游戏）。', [
                     { text: '不用了', style: 'secondary' },
@@ -271,6 +285,18 @@ export class GamePage extends BasePage {
         this.board.showHint(h.fromCell, h.toCell);
         gm.analytics.track('hint_used', { left: this.pm.hintsLeft });
         this.refreshHud(true);
+    }
+
+    /** 用 1 张提示券换 1 次提示并立刻使用 */
+    private useToken(): void {
+        if (!this.pm || this.pm.finished) return;
+        if (!this.gm.shop.useHintToken()) {
+            this.sm.toast('没有提示券了');
+            return;
+        }
+        this.pm.grantExtraHint(1);
+        this.gm.analytics.track('hint_token_used', { left: this.gm.shop.hintTokens() });
+        this.useHint();
     }
 
     /** 激励视频换提示（仅在广告真实接入且玩家主动选择时调用） */

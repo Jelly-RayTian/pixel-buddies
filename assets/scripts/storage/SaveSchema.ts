@@ -9,7 +9,7 @@
  * 新增字段时：提升 SAVE_VERSION，在 migrate() 中补默认值，绝不直接丢弃旧数据。
  */
 
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 
 export interface LevelRecord {
     bestTimeMs: number;
@@ -87,6 +87,25 @@ export interface ProgressState {
     achievements: Record<string, { at: number; claimed: boolean }>;
     /** 已发放过经验的事件键（防止重复刷经验），有上限，先进先出 */
     awarded: string[];
+    /** 兑换所（v6 新增）。xp 是累计经验、只增不减（等级由它决定）；花掉的经验记在 shop.spent */
+    shop: ShopState;
+}
+
+export interface ShopState {
+    /** 已经花掉的经验；可兑换余额 = progress.xp − spent，永远不会让等级下降 */
+    spent: number;
+    /** 提示券库存 */
+    hintTokens: number;
+    /** 已拥有的棋盘配色 id（默认配色不用兑换） */
+    owned: string[];
+    /** 正在使用的棋盘配色 id */
+    boardTheme: string;
+    /** 已经发放过升级礼物的最高等级（每升一级送 1 张提示券，不会重复发） */
+    giftLevel: number;
+}
+
+export function createDefaultShop(): ShopState {
+    return { spent: 0, hintTokens: 0, owned: [], boardTheme: 'classic', giftLevel: 1 };
 }
 
 /** 广告频控（插屏只在自然转场出现） */
@@ -155,6 +174,7 @@ export function createDefaultProgress(): ProgressState {
         weeklyHistory: [],
         achievements: {},
         awarded: [],
+        shop: createDefaultShop(),
     };
 }
 
@@ -250,6 +270,16 @@ function normalizeProgress(p: any): ProgressState {
     if (Array.isArray(p.weeklyHistory)) d.weeklyHistory = p.weeklyHistory.filter((h: any) => isObj(h) && typeof h.weekKey === 'string').map((h: any) => ({ weekKey: h.weekKey, theme: String(h.theme || ''), completedAt: num(h.completedAt, 0) })).slice(-26);
     if (isObj(p.achievements)) for (const k of Object.keys(p.achievements)) { const a = p.achievements[k]; if (isObj(a) && typeof a.at === 'number') d.achievements[k] = { at: a.at, claimed: bool(a.claimed, false) }; }
     if (Array.isArray(p.awarded)) d.awarded = p.awarded.filter((k: any) => typeof k === 'string').slice(-300);
+    if (isObj(p.shop)) {
+        const s = p.shop;
+        d.shop = {
+            spent: Math.max(0, Math.floor(num(s.spent, 0))),
+            hintTokens: Math.max(0, Math.min(99, Math.floor(num(s.hintTokens, 0)))),
+            owned: Array.isArray(s.owned) ? s.owned.filter((k: any) => typeof k === 'string').slice(0, 50) : [],
+            boardTheme: typeof s.boardTheme === 'string' && s.boardTheme ? s.boardTheme : 'classic',
+            giftLevel: Math.max(1, Math.floor(num(s.giftLevel, 1))),
+        };
+    }
     return d;
 }
 

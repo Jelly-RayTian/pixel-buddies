@@ -7,6 +7,7 @@ import { FeedbackService } from '../feedback/FeedbackService';
 import { createLeaderboard, LeaderboardService, LocalLeaderboard } from '../social/LeaderboardService';
 import { RELEASE, resolveApiBase } from '../config/PlatformConfig';
 import { ProgressManager } from '../progress/ProgressManager';
+import { ShopManager } from '../progress/ShopManager';
 import { TextureFactory } from '../art/TextureFactory';
 import { CustomArtStore } from '../art/CustomArtStore';
 import type { ArtInfo } from '../art/ArtCatalog';
@@ -127,6 +128,8 @@ export class GameManager {
     readonly apiBase: string;
     private batch: BatchSink | null = null;
     readonly progress: ProgressManager;
+    /** 兑换所：用经验兑换提示券/棋盘配色，升级送提示券 */
+    readonly shop: ShopManager;
     readonly leaderboard: LeaderboardService;
     readonly textures = new TextureFactory();
     readonly customArt: CustomArtStore;
@@ -148,6 +151,7 @@ export class GameManager {
         this.challenges = new ChallengeManager(this.save);
         this.share = new ShareManager(platform, this.challenges);
         this.progress = new ProgressManager(this.save, this.collection);
+        this.shop = new ShopManager(this.save, this.progress);
         const local = new LocalLeaderboard((board, key) => {
             const r = board === 'daily' ? this.save.data.daily[key] : undefined;
             return r && r.completed ? { timeMs: r.bestTimeMs, moves: r.bestMoves } : null;

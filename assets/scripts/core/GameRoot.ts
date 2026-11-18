@@ -21,6 +21,7 @@ import { GoalsPage } from '../pages/GoalsPage';
 import { ProfilePage } from '../pages/ProfilePage';
 import { HistoryPage } from '../pages/HistoryPage';
 import { FeedbackPage } from '../pages/FeedbackPage';
+import { ShopPage } from '../pages/ShopPage';
 import { shouldRelayout } from './RelayoutPolicy';
 import { createPlatformAdapter } from '../platform/PlatformFactory';
 import { PlatformAdapter } from '../platform/PlatformAdapter';
@@ -97,6 +98,7 @@ export class GameRoot extends Component {
         this.sm.register(new ProfilePage(this.sm, 'profile'));
         this.sm.register(new HistoryPage(this.sm, 'history'));
         this.sm.register(new FeedbackPage(this.sm, 'feedback'));
+        this.sm.register(new ShopPage(this.sm, 'shop'));
 
         this.bindLifecycle(platform);
         this.gm.share.registerPassiveShare();

@@ -12,6 +12,8 @@ export type AnalyticsEventName =
     | 'daily_challenge_started'
     | 'daily_challenge_completed'
     | 'hint_used'
+    | 'hint_token_used'
+    | 'shop_purchase'
     | 'daily_mission_completed'
     | 'weekly_challenge_completed'
     | 'achievement_unlocked'

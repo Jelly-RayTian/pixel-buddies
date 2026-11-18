@@ -82,6 +82,7 @@ export class ProfilePage extends BasePage {
         };
         mk('分享我的名片', 'primary', 'share', () => this.shareProfile());
         mk('任务与成就', 'butter', 'trophy', () => this.sm.go('goals'), gm.progress.claimableCount() > 0);
+        mk(`兑换所 · 可兑换 ${gm.shop.balance()} 经验 · 提示券 ×${gm.shop.hintTokens()}`, 'primary', 'star', () => this.sm.go('shop'), gm.shop.hasAffordable());
         mk('挑战记录与排行', 'mint', 'users', () => this.sm.go('history'));
         // 设置 + 意见反馈并排：公测期让反馈入口离首页只有两步
         const hw = (W - 16) / 2;

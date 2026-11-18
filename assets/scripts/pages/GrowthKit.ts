@@ -53,7 +53,8 @@ export function showLevelUp(level: number, title: string | null, onClose?: () =>
     const t = GameManager.I.progress.title();
     label(card, title ? `新称号：${title}` : t, Theme.font.h2, { bold: true, color: P.rose2, width: w - 60 }).node.setPosition(0, h / 2 - 380);
     const info = gm.progress.level();
-    label(card, `距离下一级还需 ${info.need - info.into} 点经验`, Theme.font.small, { color: P.ink2, width: w - 60 }).node.setPosition(0, h / 2 - 430);
+    const gift = gm.shop.syncGifts();
+    label(card, gift > 0 ? `升级礼物：提示券 +${gift} · 下一级还需 ${info.need - info.into} 点经验` : `距离下一级还需 ${info.need - info.into} 点经验`, Theme.font.small, { color: P.ink2, width: w - 60 }).node.setPosition(0, h / 2 - 430);
     button(card, {
         w: w - 100, h: 88, text: '分享升级', style: 'primary', icon: gm.textures.icon('share', P.white),
         onClick: () => {

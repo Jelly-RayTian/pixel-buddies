@@ -5,7 +5,7 @@ import { P } from '../art/Palette';
 import { Theme } from '../ui/Theme';
 import { button, ButtonHandle, label, makeNode } from '../ui/UIKit';
 
-export type PageName = 'home' | 'classic' | 'game' | 'result' | 'daily' | 'collection' | 'settings' | 'challenge' | 'workshop' | 'policy' | 'series' | 'reward' | 'goals' | 'profile' | 'history' | 'feedback';
+export type PageName = 'home' | 'classic' | 'game' | 'result' | 'daily' | 'collection' | 'settings' | 'challenge' | 'workshop' | 'policy' | 'series' | 'reward' | 'goals' | 'profile' | 'history' | 'feedback' | 'shop';
 
 /**
  * 页面基类。页面节点只构建一次（build），每次进入调用 onEnter 刷新数据，

@@ -3,6 +3,7 @@ import { P } from '../art/Palette';
 import { TextureFactory } from '../art/TextureFactory';
 import { hex, Theme } from '../ui/Theme';
 import { drawPanel, makeNode, sprite, opacityOf } from '../ui/UIKit';
+import { BoardThemeColors, resolveBoardTheme } from '../progress/ShopConfig';
 import { PuzzleManager, SwapOutcome } from './PuzzleManager';
 import { PiecePool, PuzzlePiece } from './PuzzlePiece';
 
@@ -137,11 +138,18 @@ export class PuzzleBoard {
         if (!v) this.cancelDrag();
     }
 
+    private theme: BoardThemeColors = resolveBoardTheme('classic');
+
+    /** 换棋盘配色（兑换所里兑换的）；下一次 start() 时生效 */
+    setTheme(key: string): void {
+        this.theme = resolveBoardTheme(key);
+    }
+
     private drawBackground(): void {
         const s = this.boardSize;
-        drawPanel(this.bg, s, s, { fill: P.cream2, border: P.ink, shadow: P.ink, step: Theme.px, shadowDepth: 2 });
+        drawPanel(this.bg, s, s, { fill: this.theme.fill, border: this.theme.border, shadow: this.theme.border, step: Theme.px, shadowDepth: 2 });
         // 格子底槽
-        this.bg.fillColor = hex(P.cream3, 160);
+        this.bg.fillColor = hex(this.theme.slot, 160);
         const sz = this.cell - GAP;
         for (let c = 0; c < this.grid * this.grid; c++) {
             const p = this.center(c);
