@@ -1,7 +1,7 @@
 import { Node, tween, Vec3 } from 'cc';
 import { ART_LIST } from '../art/ArtCatalog';
 import { P } from '../art/Palette';
-import { DIFFICULTIES, HELL } from '../config/GameConfig';
+import { DIFFICULTIES, EXTREME, HELL } from '../config/GameConfig';
 import { formatDuration } from '../core/GameTimer';
 import { ResultPayload } from '../core/GameManager';
 import { recordHellResult } from '../collection/HellRecords';
@@ -89,7 +89,8 @@ export class ResultPage extends BasePage {
         const titleText = compare ? (compare.outcome === 'win' ? '挑战成功！' : compare.outcome === 'lose' ? '差一点点！' : compare.outcome === 'draw' ? '势均力敌！' : '拼图完成！') : '拼图完成！';
         const title = label(c, titleText, Theme.font.hero - 8, { bold: true, color: P.white, outline: { color: P.ink, width: 6 } });
         title.node.setPosition(0, L.headerY - 6);
-        const sub = label(c, `${art.name} · ${DIFFICULTIES[result.grid].label} ${DIFFICULTIES[result.grid].desc}`, Theme.font.small, { color: P.ink2, bold: true });
+        const diffText = result.extreme ? `${EXTREME.label}模式 ${EXTREME.desc}` : `${DIFFICULTIES[result.grid].label} ${DIFFICULTIES[result.grid].desc}`;
+        const sub = label(c, `${art.name} · ${diffText}`, Theme.font.small, { color: result.extreme ? P.rose2 : P.ink2, bold: true });
         sub.node.setPosition(0, L.headerY - 64);
 
         // 自适应纵向布局：先算出底部按钮与附加区所需高度，再决定作品尺寸（16:9 与全面屏都不重叠）

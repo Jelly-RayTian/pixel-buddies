@@ -76,6 +76,45 @@ export const DIFFICULTIES: Record<GridSize, DifficultyConfig> = {
 
 export const SUPPORTED_GRIDS: GridSize[] = [3, 4, 5, 6];
 
+/**
+ * 极限模式（比“困难 6×6”更高一档，只用于经典模式）：
+ * - 整盘打乱：没有“开局就放对”的送分方块（36 块全部错位，且不存在固定点）；
+ * - 目标图隐藏，只能“按住看原图” maxPeeks 次；
+ * - 免费提示只有 freeHints 次；
+ * - 星级按自己的阈值计算，成绩存在独立的纪录键里，不计入总星数（不影响图片解锁）；
+ * - 首次通关某张图的极限模式获得 xp 点经验。
+ * 解锁条件：任意一局 5×5 及以上完成过（让玩家先熟悉规则，也让它成为一个“目标”）。
+ */
+export const EXTREME = {
+    grid: 6 as GridSize,
+    label: '极限',
+    desc: '6×6 · 36 块 · 整盘打乱',
+    blurb: '没有送分方块，目标图只能偷看 3 次，提示仅 1 次',
+    freeHints: 1,
+    maxPeeks: 3,
+    xp: 90,
+    /** 纪录键（records[imageId][key]）；不是纯数字，所以不会被当作普通难度统计 */
+    recordKey: 'x6',
+    stars: { threeStarSeconds: 300, twoStarSeconds: 600, threeStarMoveRatio: 1.25, twoStarMoveRatio: 1.7 } as StarThresholds,
+    /** 解锁所需：5×5 及以上难度的完成局数 */
+    unlockCompletions: 1,
+};
+
+/** 纪录键：普通难度为网格数字符串，极限模式为 EXTREME.recordKey */
+export function recordKeyFor(grid: GridSize, extreme?: boolean): string {
+    return extreme ? EXTREME.recordKey : String(grid);
+}
+
+/** 纪录键是否属于极限模式 */
+export function isExtremeKey(key: string): boolean {
+    return key === EXTREME.recordKey;
+}
+
+/** 极限模式是否已解锁 */
+export function isExtremeUnlocked(bigGridCompletions: number): boolean {
+    return bigGridCompletions >= EXTREME.unlockCompletions;
+}
+
 /** 新手（还没完成过任何一局）推荐的难度 */
 export const BEGINNER_GRID: GridSize = 3;
 

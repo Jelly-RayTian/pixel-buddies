@@ -2,7 +2,7 @@ import { Graphics, Label, Node, SpriteFrame } from 'cc';
 import { ArtCategory, ArtInfo, CATEGORY_LABEL, CATEGORY_ORDER, getArt } from '../art/ArtCatalog';
 import { SeriesInfo } from '../collection/SeriesCatalog';
 import { P } from '../art/Palette';
-import { beginnerSwaps, DIFFICULTIES, GridSize, HELL, misplacedCount, recommendedGrid, SUPPORTED_GRIDS } from '../config/GameConfig';
+import { beginnerSwaps, DIFFICULTIES, EXTREME, GridSize, HELL, isExtremeUnlocked, misplacedCount, recommendedGrid, SUPPORTED_GRIDS } from '../config/GameConfig';
 import { formatDuration } from '../core/GameTimer';
 import { GameManager, PlaySession } from '../core/GameManager';
 import { randomSeed } from '../core/Random';
@@ -149,7 +149,8 @@ export function openDifficultySheet(art: ArtInfo, onPick: (grid: GridSize) => vo
     const sm = gm.scene;
     const w = Math.min(gm.layout.w - 40, 680);
     const withHell = opts.hell !== false;
-    const rows = SUPPORTED_GRIDS.length + (withHell ? 1 : 0);
+    const withExtreme = withHell; // 极限与地狱同属“硬核”档，同进同出
+    const rows = SUPPORTED_GRIDS.length + (withExtreme ? 1 : 0) + (withHell ? 1 : 0);
     const headH = 250;
     // 多了地狱模式一行：矮屏上整体压缩行高，弹窗不超出屏幕
     const rowH = Math.max(124, Math.min(158, (gm.layout.h - 140 - headH - 56) / rows));
@@ -193,8 +194,39 @@ export function openDifficultySheet(art: ArtInfo, onPick: (grid: GridSize) => vo
             onPick(g);
         });
     });
-    if (withHell) {
+    // 极限模式：经典玩法里更高一档（6×6 整盘打乱、隐藏目标图），仍评星；未解锁时展示为“目标”
+    if (withExtreme) {
+        const unlocked = isExtremeUnlocked(gm.collection.bigGridCompletions());
+        const best = gm.collection.getExtremeRecord(art.id);
         const y = h / 2 - headH - rowH / 2 - SUPPORTED_GRIDS.length * rowH + 10;
+        const row = panel(card, rw, rh, { fill: unlocked ? P.white : P.cream, border: unlocked ? P.rose2 : P.ink2, shadow: P.rose, step: Theme.px, shadowDepth: 1.5 }, 0, y);
+        miniBoard(row, EXTREME.grid, EXTREME.grid * EXTREME.grid, Math.min(84, rh - 40), -rw / 2 + 70, 0);
+        label(row, `${EXTREME.label}模式  ${EXTREME.grid}×${EXTREME.grid}`, Theme.font.body, { bold: true, align: 'left', width: rw - 330, color: unlocked ? Theme.ink : Theme.textMuted }).node.setPosition(-rw / 2 + 130, rh * 0.25);
+        label(row, unlocked ? EXTREME.desc.replace('6×6 · ', '') : '完成一局 5×5 及以上难度后解锁', Theme.font.small - 2, { color: unlocked ? P.rose2 : Theme.textMuted, bold: true, align: 'left', width: rw - 330 }).node.setPosition(-rw / 2 + 130, 0);
+        label(row, EXTREME.blurb, Theme.font.tiny, { color: Theme.textMuted, align: 'left', width: rw - 330 }).node.setPosition(-rw / 2 + 130, -rh * 0.24);
+        if (!unlocked) {
+            sprite(row, gm.textures.icon('lock', P.ink2, P.yellow), 40, 40, rw / 2 - 70, 0);
+        } else if (best) {
+            starRow(row, starFrames(), best.bestStars, 3, 22, 4).setPosition(rw / 2 - 90, 16);
+            label(row, `${formatDuration(best.bestTimeMs)} · ${best.bestMoves} 步`, Theme.font.tiny, { color: P.ink2, bold: true }).node.setPosition(rw / 2 - 90, -18);
+        } else {
+            label(row, '尚未通关', Theme.font.tiny, { color: Theme.textMuted }).node.setPosition(rw / 2 - 90, 0);
+        }
+        const tag = panel(row, 132, 34, { fill: unlocked ? P.rose2 : P.ink2, border: P.ink, shadow: undefined, step: 3 }, rw / 2 - 90, rh / 2);
+        label(tag, unlocked ? '硬核挑战' : '待解锁', Theme.font.tiny, { bold: true, color: P.white });
+        onTap(row, () => {
+            if (!unlocked) {
+                gm.audio.play('error', 0.5);
+                sm.toast('先完成一局 5×5 或 6×6，就能挑战极限模式');
+                return;
+            }
+            gm.audio.play('click');
+            sm.closeModal();
+            Flow.classicExtreme(art.id);
+        });
+    }
+    if (withHell) {
+        const y = h / 2 - headH - rowH / 2 - (SUPPORTED_GRIDS.length + (withExtreme ? 1 : 0)) * rowH + 10;
         const row = panel(card, rw, rh, { fill: P.night2, border: P.ink, shadow: P.rose2, step: Theme.px, shadowDepth: 1.5 }, 0, y);
         miniBoard(row, HELL.grid, HELL.grid * HELL.grid, Math.min(84, rh - 40), -rw / 2 + 70, 0);
         label(row, `${HELL.label}  ${HELL.grid}×${HELL.grid}`, Theme.font.body, { bold: true, color: P.white, align: 'left', width: rw - 330 }).node.setPosition(-rw / 2 + 130, rh * 0.25);
@@ -225,6 +257,11 @@ export const Flow = {
             const s = beginnerSwaps(completionsAt(3));
             if (s !== null) spec.swaps = s;
         }
+        GameManager.I.scene.go('game', { mode: 'classic', spec } as PlaySession);
+    },
+    /** 极限模式（仅经典玩法）：6×6 整盘打乱，目标图隐藏，见 EXTREME */
+    classicExtreme(imageId: string): void {
+        const spec: PlaySession['spec'] = { imageId, grid: EXTREME.grid, seed: randomSeed(), extreme: true };
         GameManager.I.scene.go('game', { mode: 'classic', spec } as PlaySession);
     },
     /** 地狱模式：5×5、全部打乱，见 HELL */

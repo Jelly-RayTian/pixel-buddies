@@ -1,6 +1,7 @@
 import { ART_LIST } from '../art/ArtCatalog';
 import { isCustomId } from '../art/CustomArtStore';
 import { CollectionManager, RecordUpdate } from '../collection/CollectionManager';
+import { EXTREME, isExtremeKey, recordKeyFor } from '../config/GameConfig';
 import { toDateKey } from '../daily/DailyChallengeManager';
 import { PuzzleResult } from '../puzzle/PuzzleScoring';
 import { SaveManager } from '../storage/SaveManager';
@@ -146,7 +147,7 @@ export class ProgressManager {
             for (const g of Object.keys(d.records[id])) {
                 const r = d.records[id][g];
                 p.awarded.push(`p:${id}:${g}`);
-                xp += (GRID_XP[parseInt(g, 10)] || 10) + Math.max(0, r.bestStars - 1) * STAR_XP;
+                xp += (isExtremeKey(g) ? EXTREME.xp : GRID_XP[parseInt(g, 10)] || 10) + Math.max(0, r.bestStars - 1) * STAR_XP;
                 if (r.bestStars >= 3) threeStars++;
             }
         }
@@ -230,8 +231,9 @@ export class ProgressManager {
 
         // 1) 经验：首次完成该作品该难度；之后只有星级提升才有（每提升一星 STAR_XP）
         if (!isCustomId(result.imageId)) {
-            const key = `p:${result.imageId}:${result.grid}`;
-            if (this.once(key)) xpGained += (GRID_XP[result.grid] || 10) + Math.max(0, stars - 1) * STAR_XP;
+            const key = `p:${result.imageId}:${recordKeyFor(result.grid, result.extreme)}`;
+            const baseXp = result.extreme ? EXTREME.xp : GRID_XP[result.grid] || 10;
+            if (this.once(key)) xpGained += baseXp + Math.max(0, stars - 1) * STAR_XP;
             else {
                 const prevStars = rec.previousBest ? rec.previousBest.bestStars : 0;
                 if (stars > prevStars) xpGained += (stars - prevStars) * STAR_XP;
@@ -326,7 +328,7 @@ export class ProgressManager {
 
     achievementStats(): AchievementStats {
         const o = this.collection.overall();
-        return { ...this.p.stats, collectedCount: o.collected, seriesDone: o.seriesDone };
+        return { ...this.p.stats, collectedCount: o.collected, seriesDone: o.seriesDone, extremeCleared: this.collection.extremeClearedCount() };
     }
 
     /** 检查并解锁达成条件的成就（只解锁一次），返回本次新解锁的 */

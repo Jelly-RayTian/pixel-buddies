@@ -1,5 +1,5 @@
 import { ART_LIST, ArtCategory, ArtInfo, getArt } from '../art/ArtCatalog';
-import { GridSize, SUPPORTED_GRIDS } from '../config/GameConfig';
+import { EXTREME, GridSize, isExtremeKey, recordKeyFor, SUPPORTED_GRIDS } from '../config/GameConfig';
 import { computeStars, isBetterRecord, PuzzleResult, StarBreakdown } from '../puzzle/PuzzleScoring';
 import { SaveManager } from '../storage/SaveManager';
 import { getSeries, SERIES_LIST, seriesOfItem, seriesState, SeriesInfo, SeriesState } from './SeriesCatalog';
@@ -72,9 +72,34 @@ export interface CollectionEntry {
 export class CollectionManager {
     constructor(private readonly save: SaveManager, private readonly now: () => number = () => Date.now()) {}
 
-    getRecord(imageId: string, grid: GridSize): LevelRecord | null {
+    getRecord(imageId: string, grid: GridSize, extreme = false): LevelRecord | null {
         const r = this.save.data.records[imageId];
-        return (r && r[String(grid)]) || null;
+        return (r && r[recordKeyFor(grid, extreme)]) || null;
+    }
+
+    /** 极限模式纪录（独立存放，不计入总星数） */
+    getExtremeRecord(imageId: string): LevelRecord | null {
+        return this.getRecord(imageId, EXTREME.grid, true);
+    }
+
+    /** 已通关极限模式的作品数 */
+    extremeClearedCount(): number {
+        let n = 0;
+        for (const a of ART_LIST) if (this.getExtremeRecord(a.id)) n++;
+        return n;
+    }
+
+    /** 5×5 及以上难度（普通难度）的完成局数，用于解锁极限模式 */
+    bigGridCompletions(): number {
+        let n = 0;
+        const recs = this.save.data.records;
+        for (const id of Object.keys(recs)) {
+            for (const g of Object.keys(recs[id])) {
+                if (isExtremeKey(g)) continue;
+                if (parseInt(g, 10) >= 5) n += recs[id][g].completions | 0;
+            }
+        }
+        return n;
     }
 
     /** 总星数 = 每张图每个难度的最佳星级之和 */
@@ -83,7 +108,7 @@ export class CollectionManager {
         const recs = this.save.data.records;
         for (const id of Object.keys(recs)) {
             if (!getArt(id)) continue;
-            for (const g of Object.keys(recs[id])) sum += Math.max(0, Math.min(3, recs[id][g].bestStars | 0));
+            for (const g of Object.keys(recs[id])) if (!isExtremeKey(g)) sum += Math.max(0, Math.min(3, recs[id][g].bestStars | 0));
         }
         return sum;
     }
@@ -109,8 +134,8 @@ export class CollectionManager {
     /** 记录一局结果（经典/每日/好友模式都会调用） */
     recordResult(result: PuzzleResult): RecordUpdate {
         const breakdown = computeStars(result);
-        const key = String(result.grid);
-        const prev = this.getRecord(result.imageId, result.grid);
+        const key = recordKeyFor(result.grid, result.extreme);
+        const prev = this.getRecord(result.imageId, result.grid, !!result.extreme);
         const previousBest = prev ? { ...prev } : null;
         const starsBefore = this.totalStars();
         const playableBefore = ART_LIST.filter((a) => this.isPlayable(a.id)).map((a) => a.id);
@@ -146,7 +171,7 @@ export class CollectionManager {
             if (sInfo && sInfo.items.every((id) => !!d.collected[id]) && !d.rewards[sInfo.id]) d.rewards[sInfo.id] = { at: t, seen: false };
         });
 
-        const best = this.getRecord(result.imageId, result.grid)!;
+        const best = this.getRecord(result.imageId, result.grid, !!result.extreme)!;
         const newlyUnlocked: ArtInfo[] = [];
         if (this.totalStars() > starsBefore) {
             for (const a of ART_LIST) if (!playableBefore.includes(a.id) && this.isPlayable(a.id)) newlyUnlocked.push(a);

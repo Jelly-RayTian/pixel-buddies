@@ -26,6 +26,8 @@ export interface PuzzleSpec {
     swaps?: number;
     /** 打乱方式：默认两两互换；'full' = 地狱模式，所有可打乱的方块都不在原位（随机错排） */
     shuffle?: 'full';
+    /** 极限模式（经典玩法里更高一档）：同样整盘打乱，但仍评星、仍锁定拼对的方块；见 EXTREME */
+    extreme?: boolean;
 }
 
 export interface PuzzleLayout extends PuzzleSpec {
@@ -49,9 +51,9 @@ export function generateLayout(spec: PuzzleSpec, fixedCells: readonly number[] =
     const want = Math.max(1, Math.min(maxSwaps(spec.grid), spec.swaps ?? DIFFICULTIES[spec.grid].swaps));
     // 可打乱的格子不够时少换几次；连一次都换不了（几乎纯色的作品）就退回普通打乱，保证总能出题
     const useFixed = free >= 2;
-    if (spec.shuffle === 'full') {
+    if (spec.shuffle === 'full' || spec.extreme) {
         const order = fullShuffle(n, rng, useFixed ? fixed : []);
-        return { imageId: spec.imageId, grid: spec.grid, seed: spec.seed >>> 0, swaps: minSwapsToSolve(order), order, shuffle: 'full' };
+        return { imageId: spec.imageId, grid: spec.grid, seed: spec.seed >>> 0, swaps: minSwapsToSolve(order), order, ...(spec.extreme ? { extreme: true } : { shuffle: 'full' as const }) };
     }
     const swaps = useFixed ? Math.min(want, Math.floor(free / 2)) : want;
     const order = shuffleOrder(n, rng, swaps, useFixed ? fixed : []);

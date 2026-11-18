@@ -1,4 +1,4 @@
-import { DIFFICULTIES, GAMEPLAY } from '../config/GameConfig';
+import { DIFFICULTIES, EXTREME, GAMEPLAY } from '../config/GameConfig';
 import { GameTimer, Clock, defaultClock } from '../core/GameTimer';
 import { buildPieces, generateLayout, PieceData, PuzzleLayout, PuzzleSpec } from './PuzzleGenerator';
 import { PuzzleResult } from './PuzzleScoring';
@@ -81,10 +81,18 @@ export class PuzzleManager {
     }
     get hintsLeft(): number {
         if (!this.hintsAllowed) return 0;
-        return Math.max(0, DIFFICULTIES[this.spec.grid].freeHints + this._bonusHints - this._hintsUsed);
+        const free = this.spec.extreme ? EXTREME.freeHints : DIFFICULTIES[this.spec.grid].freeHints;
+        return Math.max(0, free + this._bonusHints - this._hintsUsed);
     }
     get peekCount(): number {
         return this._peekCount;
+    }
+    get extreme(): boolean {
+        return !!this.spec.extreme;
+    }
+    /** 还能“按住看原图”几次；普通模式不限次数（Infinity） */
+    get peeksLeft(): number {
+        return this.spec.extreme ? Math.max(0, EXTREME.maxPeeks - this._peekCount) : Infinity;
     }
     get finished(): boolean {
         return this._finished;
@@ -234,6 +242,7 @@ export class PuzzleManager {
             peekCount: this._peekCount,
             undoCount: this._undoCount,
             optimalMoves: this.optimalMoves,
+            extreme: this.spec.extreme ? true : undefined,
         };
     }
 

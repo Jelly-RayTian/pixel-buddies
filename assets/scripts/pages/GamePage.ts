@@ -1,6 +1,6 @@
 import { BlockInputEvents, Graphics, Label, Node, Sprite, tween, Tween, UITransform, Vec3 } from 'cc';
 import { P } from '../art/Palette';
-import { CHALLENGE, DIFFICULTIES, HELL } from '../config/GameConfig';
+import { CHALLENGE, DIFFICULTIES, EXTREME, HELL } from '../config/GameConfig';
 import { formatDuration } from '../core/GameTimer';
 import { PlaySession, ResultPayload } from '../core/GameManager';
 import { PuzzleBoard } from '../puzzle/PuzzleBoard';
@@ -50,6 +50,8 @@ export class GamePage extends BasePage {
     private paused = false;
     private finishing = false;
     private refSprite!: Sprite;
+    private refTagLabel!: Label;
+    private zoomTagLabel!: Label;
     private fxLayer!: Node;
     private refRect = { x: 0, y: 0, w: 0, h: 0 };
     private boardRect = { x: 0, y: 0, w: 0, h: 0 };
@@ -87,9 +89,9 @@ export class GamePage extends BasePage {
         this.refSprite = refFrame.getComponentInChildren(Sprite)!;
         this.refRect = { x: refX, y: tbY, w: TB, h: TB };
         const refTag = panel(this.root, 124, 34, { fill: P.rose, border: P.ink, shadow: undefined, step: 3 }, refX, tbY + TB / 2 + 6);
-        label(refTag, '目标图片', Theme.font.tiny, { bold: true, color: P.white });
+        this.refTagLabel = label(refTag, '目标图片', Theme.font.tiny, { bold: true, color: P.white });
         const zoomTag = panel(this.root, 124, 30, { fill: P.white, border: P.ink, shadow: undefined, step: 3 }, refX, tbY - TB / 2 - 6);
-        label(zoomTag, '点击放大', Theme.font.tiny - 2, { bold: true, color: P.ink2 });
+        this.zoomTagLabel = label(zoomTag, '点击放大', Theme.font.tiny - 2, { bold: true, color: P.ink2 });
         onTap(refFrame, () => this.openReference());
 
         const sx = refX + TB / 2 + 24;
@@ -162,14 +164,19 @@ export class GamePage extends BasePage {
         const fixed = legacy ? [] : identicalTileCells(canvas.data, canvas.w, session.spec.grid);
         this.hell = session.mode === 'hell';
         // 地狱模式：拼对不锁定、不给提示；按长相判断是否拼好（两块一模一样的方块互换也算对）
-        const rules = this.hell ? { lockCorrect: false, hints: false, looks: tileLooks(canvas.data, canvas.w, session.spec.grid) } : {};
+        const ex = !!session.spec.extreme;
+        const rules = this.hell ? { lockCorrect: false, hints: false, looks: tileLooks(canvas.data, canvas.w, session.spec.grid) } : ex ? { looks: tileLooks(canvas.data, canvas.w, session.spec.grid) } : {};
         this.pm = new PuzzleManager(session.spec, undefined, fixed, rules);
         this.board.start(this.pm);
         this.board.setEnabled(true);
         const art = this.gm.resolveArt(session.spec.imageId);
         this.titleLabel.string = art ? art.name : '像素拼图';
         const d = DIFFICULTIES[session.spec.grid];
-        this.tagLabel.string = this.hell ? `${MODE_TAG.hell} · ${session.spec.grid}×${session.spec.grid} ${HELL.desc}` : `${MODE_TAG[session.mode]} · ${d.label} ${d.desc}`;
+        this.tagLabel.string = this.hell ? `${MODE_TAG.hell} · ${session.spec.grid}×${session.spec.grid} ${HELL.desc}` : ex ? `${MODE_TAG[session.mode]} · ${EXTREME.label}模式 ${EXTREME.desc}` : `${MODE_TAG[session.mode]} · ${d.label} ${d.desc}`;
+        // 极限模式：目标图隐藏，只能靠“按住看原图”偷看有限次数
+        this.refSprite.node.active = !ex;
+        this.refTagLabel.string = ex ? '目标已隐藏' : '目标图片';
+        this.zoomTagLabel.string = ex ? `偷看 ${EXTREME.maxPeeks} 次` : '点击放大';
         this.progressNode.active = !this.hell;
         this.hintBtn.setEnabled(!this.hell);
         const firstEver = gm.save.data.totalPlays === 0;
@@ -297,7 +304,15 @@ export class GamePage extends BasePage {
             this.board.setPeek(false);
             return;
         }
-        if (show) this.pm.recordPeek();
+        if (show) {
+            if (this.pm.peeksLeft <= 0) {
+                this.sm.toast('极限模式的偷看次数用完了');
+                this.board.setPeek(false);
+                return;
+            }
+            this.pm.recordPeek();
+            this.refreshHud(true);
+        }
         this.board.setPeek(show);
     }
 
@@ -403,13 +418,19 @@ export class GamePage extends BasePage {
         const ms = pm.timer.elapsedMs;
         this.timeLabel.string = formatDuration(ms);
         // “显示剩余时间”：距离三星时间上限还剩多少
-        const s = computeStars({ grid: pm.spec.grid, timeMs: ms, moves: pm.moves, hintsUsed: pm.hintsUsed, optimalMoves: pm.optimalMoves });
+        const s = computeStars({ grid: pm.spec.grid, timeMs: ms, moves: pm.moves, hintsUsed: pm.hintsUsed, optimalMoves: pm.optimalMoves, extreme: pm.extreme });
         const left = s.threeStarSeconds * 1000 - ms;
         this.goalLabel.string = left > 0 ? `三星 ${formatDuration(left)}` : `${s.stars} 星进行中`;
         if (!full) return;
         // 已用步数 / 当前星级的步数上限（三星 → 二星 → 不限），让玩家知道乱试的代价
         this.movesLabel.string = movesHudText(pm.moves, s);
         this.hintBtn.setText(`提示 ×${pm.hintsLeft}`);
+        if (pm.extreme) {
+            this.peekBtn.setText(`看原图 ×${pm.peeksLeft}`);
+            this.zoomTagLabel.string = `偷看剩 ${pm.peeksLeft} 次`;
+        } else {
+            this.peekBtn.setText('按住看原图');
+        }
         this.undoBtn.setEnabled(pm.canUndo);
         const done = pm.correctCount;
         this.progressLabel.string = `已归位 ${done}/${pm.n}`;
@@ -430,6 +451,10 @@ export class GamePage extends BasePage {
 
     private openReference(): void {
         if (!this.pm || this.tut || this.paused) return;
+        if (this.pm.extreme) {
+            this.sm.toast('极限模式没有目标图，试试“按住看原图”（次数有限）');
+            return;
+        }
         const gm = this.gm;
         const w = Math.min(this.L.w - 60, 640);
         const art = Math.min(w - 90, 540);

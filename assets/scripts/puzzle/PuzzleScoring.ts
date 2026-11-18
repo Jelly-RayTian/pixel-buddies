@@ -1,4 +1,4 @@
-import { DIFFICULTIES, GridSize, MAX_STARS_BY_HINTS } from '../config/GameConfig';
+import { DIFFICULTIES, EXTREME, GridSize, MAX_STARS_BY_HINTS } from '../config/GameConfig';
 
 export interface PuzzleResult {
     imageId: string;
@@ -11,6 +11,8 @@ export interface PuzzleResult {
     undoCount: number;
     /** 开局时还原所需最少步数 */
     optimalMoves: number;
+    /** 极限模式 */
+    extreme?: boolean;
 }
 
 export interface StarBreakdown {
@@ -29,8 +31,8 @@ export interface StarBreakdown {
  * 星级 = min(时间星, 步数星, 提示上限)，完成即至少 1 星。
  * 阈值按难度配置；步数阈值相对“最优步数”计算，因此不同打乱结果之间是公平的。
  */
-export function computeStars(r: Pick<PuzzleResult, 'grid' | 'timeMs' | 'moves' | 'hintsUsed' | 'optimalMoves'>): StarBreakdown {
-    const cfg = DIFFICULTIES[r.grid].stars;
+export function computeStars(r: Pick<PuzzleResult, 'grid' | 'timeMs' | 'moves' | 'hintsUsed' | 'optimalMoves' | 'extreme'>): StarBreakdown {
+    const cfg = r.extreme ? EXTREME.stars : DIFFICULTIES[r.grid].stars;
     const seconds = r.timeMs / 1000;
     const opt = Math.max(1, r.optimalMoves);
     const threeStarMoves = Math.ceil(opt * cfg.threeStarMoveRatio);

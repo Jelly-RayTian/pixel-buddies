@@ -171,6 +171,8 @@ export interface AchievementStats {
     friendWins: number;
     collectedCount: number;
     seriesDone: number;
+    /** 通关极限模式的作品数 */
+    extremeCleared: number;
 }
 
 export interface AchievementDef {
@@ -194,6 +196,8 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     { id: 'daily_7', title: '每日坚持', desc: '累计完成 7 次每日挑战', target: 7, xp: 100, icon: 'calendar', value: (s) => s.dailyChallenges },
     { id: 'weekly_1', title: '周挑战达成', desc: '完成 1 次每周挑战', target: 1, xp: 100, icon: 'flame', value: (s) => s.weeklyCompleted },
     { id: 'friend_win', title: '赢了好友', desc: '在好友挑战中取胜', target: 1, xp: 60, icon: 'users', value: (s) => s.friendWins },
+    { id: 'extreme_1', title: '极限挑战者', desc: '通关 1 次极限模式', target: 1, xp: 120, icon: 'flame', value: (s) => s.extremeCleared },
+    { id: 'extreme_3', title: '极限收藏家', desc: '通关 3 件作品的极限模式', target: 3, xp: 200, icon: 'crown', value: (s) => s.extremeCleared },
 ];
 
 const ACH_BY_ID: Record<string, AchievementDef> = {};
