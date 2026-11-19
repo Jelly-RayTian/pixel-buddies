@@ -7,7 +7,7 @@
 
 export const POLICY_META = {
     developer: '果冻、电子大米（两位开发者）',
-    contact: '【联系邮箱】',
+    contact: 'guojelly123@gmail.com',
     updatedAt: '2026 年 11 月 16 日',
 };
 

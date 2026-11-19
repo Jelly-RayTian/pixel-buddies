@@ -9,7 +9,7 @@
 - ✅ 功能裁剪完成，微信/抖音 release 包约 2.2MB。
 - 🟨 背景音乐：菜单歌单是本地小游戏分包，主题曲分包是远程分包，开发/体验版部署在 `https://pixel-buddies.vercel.app/mini/<平台>/`；**正式版必须换成已 ICP 备案的域名**（vercel.app 无法备案），用 `npm run mini:release` 构建提审包，并把域名加入 downloadFile 合法域名，真机确认能播放（见 MUSIC.md）。
 - 🟨 `pink_haze.mp3`（Pink Haze）是作者录音：确认曲子为自己创作，或已取得曲作者授权。
-- 🟨 游戏内《隐私政策》《用户协议》已完成（模板）：发布前替换【联系邮箱】（开发者名称已填“果冻和电子大米”，需与平台后台主体一致），并在微信/抖音后台配置隐私保护指引（相册用途）。
+- 🟨 游戏内《隐私政策》《用户协议》已完成（模板）：发布前替换（开发者名称和联系邮箱已填，开发者名称需与平台后台主体一致），并在微信/抖音后台配置隐私保护指引（相册用途）。
 - 🟨 图标已生成（`docs/store-assets/icon_512.png`、`icon_144.png`），微信默认分享图已打进包内；平台后台的宣传截图可以直接用 `docs/screenshots/`。启动页目前仍是 Cocos 默认样式。
 - ⬜ 平台版本审核；游戏类目所需资质（如软件著作权）以平台最新要求为准。
 
@@ -44,7 +44,7 @@
 
 ## V6 公测（Web）新增事项
 - [ ] 注册/登录 Cloudflare，`wrangler login`，创建 D1 并建表、填 `wrangler.toml`（见 PUBLIC_BETA.md 第 2 节）
-- [ ] 替换隐私政策里的【联系邮箱】（开发者名称已填“果冻和电子大米”，需与平台后台主体一致）占位符（`assets/scripts/config/PolicyText.ts`）——公开前必须做
+- [ ] 替换隐私政策里的（开发者名称和联系邮箱已填，开发者名称需与平台后台主体一致）占位符（`assets/scripts/config/PolicyText.ts`）——公开前必须做
 - [ ] `cd tools && npm run web:deploy`，然后 `npx tsx smoke-api.ts https://你的域名` 冒烟
 - [ ] 在 Cloudflare 给 `/api/*` 配速率限制规则
 - [ ] 真机 iOS Safari / Android Chrome 打开：加载页、双指缩放被禁用、切后台音乐暂停、刷新后进度还在、反馈输入框弹键盘、旋转屏幕
