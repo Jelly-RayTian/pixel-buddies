@@ -6,7 +6,7 @@
  */
 
 export const POLICY_META = {
-    developer: '【开发者名称】',
+    developer: '果冻和电子大米',
     contact: '【联系邮箱】',
     updatedAt: '2026 年 11 月 16 日',
 };

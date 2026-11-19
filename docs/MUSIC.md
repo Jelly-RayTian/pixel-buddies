@@ -82,13 +82,17 @@
 | 分包 | Bundle 配置 | 微信/抖音小游戏上 |
 |---|---|---|
 | `assets/music`（菜单歌单，2.7MB） | `pb_music_cfg` | 本地小游戏分包：没网时菜单也有音乐 |
-| `music_animals` / `music_sweets` / `music_daily` / `music_zodiac` / `music_stars`（主题曲，约 29MB） | `pb_music_remote_cfg` | **远程分包**：不打进小游戏包，从网站下载 |
+| `music_animals` / `music_sweets` / `music_daily` / `music_zodiac` / `music_stars`（主题曲，约 11.5MB） | `pb_music_cfg` | 本地小游戏分包：随包发布，不需要域名 |
 
-两个配置都在 `settings/v2/packages/builder.json`。新加主题曲分包时，`.meta` 的 `bundleConfigID` 设为 `pb_music_remote_cfg`；`tools/tests/music.test.ts` 会检查。网页版不受影响，所有分包都随网页一起部署。
+两个配置都在 `settings/v2/packages/builder.json`（`pb_music_remote_cfg` 是备用的远程分包配置，目前没有分包使用它）。新加主题曲分包时，`.meta` 的 `bundleConfigID` 设为 `pb_music_cfg`；`tools/tests/music.test.ts` 会检查，并限制所有音乐合计不超过 15MB。网页版不受影响，所有分包都随网页一起部署。
 
-## 小游戏远程音乐
+## 主题曲压缩（现行方案）
 
-微信小游戏规定主包不超过 4M、所有包合计不超过 30M。主题曲越来越多，所以改为远程加载：
+主题曲原来是 40kbps、约 28MB，加上代码超过小游戏整包预算（各处资料写的整包上限不一致：16/20/30MB，以微信开发者工具的提示为准）。现在统一压成 **22.05kHz 单声道 16kbps**（`bash tools/shrink-themes.sh`，可重复运行，已压过的会跳过），主题曲合计约 11.5MB，所有包合计约 17MB，**全部随小游戏包发布，不需要远程域名**。代价是高频和细节变少（方波合成曲受影响较小）；网页版用的是同一批文件，音质同样降低，但下载量也更小。重新生成主题曲后要再运行一次压缩脚本。
+
+## 小游戏远程音乐（备用方案，目前不用）
+
+如果以后音乐超出预算，可以把某个分包改回远程（`.meta` 的 `bundleConfigID` 设为 `pb_music_remote_cfg`）：
 
 - 构建配置 `tools/build-configs/wechatgame.release.json`、`bytedance-mini-game.release.json` 的资源服务器地址（`server`）是 `https://pixel-buddies.vercel.app/mini/<平台>/`，并开启 `md5Cache`（文件名带哈希，可长缓存，更新不串版本）。
 - `npm run web:vercel` 会同时构建网页版和两个小游戏，把 `build/<平台>/remote/` 复制到 `dist/mini/<平台>/remote/`，和网页一起部署到 Vercel。**每次部署都会带上**，否则已发布的小游戏会找不到音乐（只想发网页版可设 `MINI_PLATFORMS=` 跳过，但不要在小游戏已上线后这么做）。

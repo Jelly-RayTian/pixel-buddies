@@ -7,7 +7,7 @@
   "subMetas": {},
   "userData": {
     "isBundle": true,
-    "bundleConfigID": "pb_music_remote_cfg",
+    "bundleConfigID": "pb_music_cfg",
     "bundleName": "music_stars",
     "priority": 1
   }

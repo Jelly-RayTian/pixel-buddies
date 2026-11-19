@@ -80,14 +80,20 @@ test('选曲：系列页播放该系列主题曲，返回时（无参数）记�
     assert.equal(pickBgm('series', { id: 'daily' }, ctx), 'cabin');
 });
 
-test('包体：菜单歌单是本地小游戏分包，主题曲分包在小游戏上走远程，构建配置填好了资源服务器', () => {
+test('包体：菜单歌单和所有主题曲都是本地小游戏分包（不依赖远程域名），总大小在包体预算内', () => {
     const builder = JSON.parse(fs.readFileSync(path.join(ASSETS, '..', 'settings', 'v2', 'packages', 'builder.json'), 'utf8'));
     const cfg = (id: string) => builder.bundleConfig.custom[id].configs.miniGame.preferredOptions;
     assert.deepEqual(cfg('pb_music_cfg'), { isRemote: false, compressionType: 'subpackage' });
     assert.equal(cfg('pb_music_remote_cfg').isRemote, true);
     const metaOf = (b: string) => JSON.parse(fs.readFileSync(path.join(ASSETS, `${b}.meta`), 'utf8')).userData.bundleConfigID;
     assert.equal(metaOf(MUSIC_BUNDLE_NAME), 'pb_music_cfg', '没网时菜单也有音乐');
-    for (const b of Object.values(THEME_BUNDLES)) assert.equal(metaOf(b), 'pb_music_remote_cfg', `${b} 应为远程分包`);
+    for (const b of Object.values(THEME_BUNDLES)) assert.equal(metaOf(b), 'pb_music_cfg', `${b} 应为本地小游戏分包`);
+    // 所有音乐合计不超过 15MB（主包约 2.4MB + 其余分包，要留在 16–20MB 的保守整包预算内）
+    let total = 0;
+    for (const b of [MUSIC_BUNDLE_NAME, ...Object.values(THEME_BUNDLES)]) {
+        for (const f of fs.readdirSync(path.join(ASSETS, b))) if (f.endsWith('.mp3')) total += fs.statSync(path.join(ASSETS, b, f)).size;
+    }
+    assert.ok(total < 15 * 1024 * 1024, `音乐合计 ${(total / 1048576).toFixed(1)}MB，超过 15MB 预算`);
     for (const p of ['wechatgame', 'bytedance-mini-game']) {
         const c = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'build-configs', `${p}.release.json`), 'utf8'));
         assert.equal(c.server, `https://pixel-buddies.vercel.app/mini/${p}/`);

@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # 用 Cocos Creator 命令行构建小游戏（需要本机安装 Cocos Creator 3.8.8）。
 # 用法：bash tools/build-mini.sh wechatgame|bytedance-mini-game
-# 主题曲分包是远程分包（pb_music_remote_cfg），构建后在 build/<平台>/remote/，
-# 由 deploy-vercel.sh 一起部署到 https://pixel-buddies.vercel.app/mini/<平台>/remote/（仅适合开发/体验版）。
+# 主题曲和菜单歌单都是本地小游戏分包（pb_music_cfg），不需要远程域名；
+# 只有存在远程分包（pb_music_remote_cfg）时，构建后才会有 build/<平台>/remote/，需要上传到已备案域名。
 #
-# 提审包：在 tools/release.env 填好 AppID 和已备案的远程资源域名（见 release.env.example），然后
+# 提审包：在 tools/release.env 填好 AppID（有远程分包时还要填已备案的远程资源域名，见 release.env.example），然后
 #   RELEASE=1 bash tools/build-mini.sh wechatgame      （或 npm run mini:release）
-# RELEASE=1 时 AppID 是占位值、或远程资源域名无法备案（如 *.vercel.app）会直接拒绝构建。
+# RELEASE=1 时 AppID 是占位值会直接拒绝构建；有远程分包时远程域名无法备案（如 *.vercel.app）也会拒绝。
 set -u
 cd "$(dirname "$0")/.."
 P="$PWD"

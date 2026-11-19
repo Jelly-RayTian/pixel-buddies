@@ -2,7 +2,8 @@
 //
 // 发布时需要的三个值都放在 tools/release.env（不进仓库，复制 release.env.example 填写）：
 //   WX_APPID / TT_APPID   —— 微信 / 抖音 AppID
-//   MINI_REMOTE_BASE      —— 远程资源（主题曲）根地址，必须是已 ICP 备案的 https 域名
+//   MINI_REMOTE_BASE      —— 仅当有远程分包（bundleConfigID 为 pb_music_remote_cfg）时需要：根地址必须是已 ICP 备案的 https 域名
+//                            现在所有主题曲都是本地分包，不设也能提审
 // 构建时把它们写进一份临时构建配置，不改动仓库里的 build-configs/*.release.json。
 
 export const PLACEHOLDER_APPID = /YOUR_|^$/;
@@ -27,13 +28,16 @@ export function effectiveMiniConfig(platform, base, env = {}) {
 }
 
 /** 检查一份小游戏构建配置能否提交审核。errors：上线后一定出问题；warnings：建议处理 */
-export function checkMiniRelease(platform, cfg) {
+export function checkMiniRelease(platform, cfg, opts = {}) {
+    const hasRemote = !!opts.hasRemote;
     const errors = [];
     const warnings = [];
     const appid = cfg.packages?.[platform]?.appid || '';
     if (PLACEHOLDER_APPID.test(appid)) errors.push(`AppID 还是占位值（${appid || '空'}）：在 tools/release.env 里填 ${APPID_ENV[platform]}`);
     const server = cfg.server || '';
-    if (!server) {
+    if (!hasRemote) {
+        // 没有远程分包：不需要远程资源域名，也不需要备案域名
+    } else if (!server) {
         errors.push('没有设置远程资源地址：主题曲是远程分包，必须设置 MINI_REMOTE_BASE');
     } else {
         let host = '';
@@ -50,6 +54,6 @@ export function checkMiniRelease(platform, cfg) {
         }
         if (host && !unfiled) warnings.push(`记得在${platform === 'wechatgame' ? '微信公众平台' : '抖音开放平台'}把 https://${host} 加入 downloadFile 合法域名`);
     }
-    if (!cfg.md5Cache) warnings.push('建议打开 md5Cache，避免玩家拿到旧的远程资源');
+    if (hasRemote && !cfg.md5Cache) warnings.push('建议打开 md5Cache，避免玩家拿到旧的远程资源');
     return { errors, warnings };
 }
