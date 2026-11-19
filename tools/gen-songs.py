@@ -38,7 +38,7 @@ gt = _load('gen_themes', 'gen-themes.py')
 gm = gt.gm
 SR = gm.SR
 tvec, fade, lp, hp, rms = gm.tvec, gm.fade, gm.lp, gm.hp, gm.rms
-TARGET_SECONDS = 161.75
+TARGET_SECONDS = float(os.environ.get('PB_TARGET_SECONDS', 161.75))  # 环境变量可缩短曲长（小游戏包体预算）
 R = np.random.default_rng(0)
 
 # ================================================================== 音色：通用
@@ -496,8 +496,10 @@ def render(sp, target=TARGET_SECONDS):
     bar_beats = per / 2
     q_bpm = sp['bpm'] * (1.5 if meter == '6/8' else 1)
     bar_s = bar_beats * 60 / q_bpm
-    k = max(4, round((target / bar_s - 8) / 8))
+    k = max(int(os.environ.get('PB_MIN_SECTIONS', 4)), round((target / bar_s - 8) / 8))
     bars_total = 8 + 8 * k
+    if os.environ.get('PB_KEEP_TEMPO') == '1':  # 保持原速：曲长由乐段数决定，不再为凑目标时长而改速度
+        target = bars_total * bar_s
     q_bpm = bars_total * bar_beats * 60 / target
     s = gm.Song(q_bpm, bars_total * bar_beats, tail=4.0)
     A = parse(sp['A'], meter)

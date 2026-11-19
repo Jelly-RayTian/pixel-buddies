@@ -82,13 +82,22 @@
 | 分包 | Bundle 配置 | 微信/抖音小游戏上 |
 |---|---|---|
 | `assets/music`（菜单歌单，2.7MB） | `pb_music_cfg` | 本地小游戏分包：没网时菜单也有音乐 |
-| `music_animals` / `music_sweets` / `music_daily` / `music_zodiac` / `music_stars`（主题曲，约 11.5MB） | `pb_music_cfg` | 本地小游戏分包：随包发布，不需要域名 |
+| `music_animals` / `music_sweets` / `music_daily` / `music_zodiac` / `music_stars`（主题曲，约 12.9MB） | `pb_music_cfg` | 本地小游戏分包：随包发布，不需要域名 |
 
-两个配置都在 `settings/v2/packages/builder.json`（`pb_music_remote_cfg` 是备用的远程分包配置，目前没有分包使用它）。新加主题曲分包时，`.meta` 的 `bundleConfigID` 设为 `pb_music_cfg`；`tools/tests/music.test.ts` 会检查，并限制所有音乐合计不超过 15MB。网页版不受影响，所有分包都随网页一起部署。
+两个配置都在 `settings/v2/packages/builder.json`（`pb_music_remote_cfg` 是备用的远程分包配置，目前没有分包使用它）。新加主题曲分包时，`.meta` 的 `bundleConfigID` 设为 `pb_music_cfg`；`tools/tests/music.test.ts` 会检查，并限制所有音乐合计不超过 16MB。网页版不受影响，所有分包都随网页一起部署。
 
-## 主题曲压缩（现行方案）
+## 主题曲缩短（现行方案）
 
-主题曲原来是 40kbps、约 28MB，加上代码超过小游戏整包预算（各处资料写的整包上限不一致：16/20/30MB，以微信开发者工具的提示为准）。现在统一压成 **22.05kHz 单声道 16kbps**（`bash tools/shrink-themes.sh`，可重复运行，已压过的会跳过），主题曲合计约 11.5MB，所有包合计约 17MB，**全部随小游戏包发布，不需要远程域名**。代价是高频和细节变少（方波合成曲受影响较小）；网页版用的是同一批文件，音质同样降低，但下载量也更小。重新生成主题曲后要再运行一次压缩脚本。
+主题曲原来每首约 2:41、40kbps，36 首合计约 28MB，加上代码超过小游戏整包预算（官方现行文档写总包 30MB、主包 4MB、普通分包不限单个大小；但有资料说 30MB 只给开通虚拟支付的游戏，其余按 20MB，所以按 20MB 保守算）。现在**音质不变（仍是 44.1kHz 单声道 40kbps），改为缩短曲长**：36 首每首约 62～87 秒（速度保持原样，乐段从原来的 20 段缩到 2～4 段），合计约 12.9MB，整包约 18MB，**全部随小游戏包发布，不需要远程域名**。曲子仍是无缝循环。
+
+用生成器的三个环境变量重新生成：
+
+```bash
+PB_TARGET_SECONDS=72 PB_MIN_SECTIONS=2 PB_KEEP_TEMPO=1 python3 tools/gen-themes.py music-out
+PB_TARGET_SECONDS=72 PB_MIN_SECTIONS=2 PB_KEEP_TEMPO=1 python3 tools/gen-songs.py music-out
+```
+
+`PB_KEEP_TEMPO=1` 让每首保持设定速度（曲长由乐段数决定），不设则会为凑目标时长而加快或放慢。不设任何变量时仍生成约 2:41 的完整版本。
 
 ## 小游戏远程音乐（备用方案，目前不用）
 

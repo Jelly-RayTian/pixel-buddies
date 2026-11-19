@@ -26,7 +26,7 @@ gm = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(gm)
 
 SR = gm.SR
-TARGET_SECONDS = 161.75
+TARGET_SECONDS = float(os.environ.get('PB_TARGET_SECONDS', 161.75))  # 环境变量可缩短曲长（小游戏包体预算）
 tvec, fade, lp, hp, rms = gm.tvec, gm.fade, gm.lp, gm.hp, gm.rms
 
 # ------------------------------------------------------------------ 新音色
@@ -307,8 +307,10 @@ def render_theme(th, target=TARGET_SECONDS):
     slow = style in ('ambient',)
     # 段落：前奏 4 + 8×k + 尾声 4，k 取最接近目标时长的值，再微调速度
     bar_s = meter * 60 / th['bpm']
-    k = max(4, round((target / bar_s - 8) / 8))
+    k = max(int(os.environ.get('PB_MIN_SECTIONS', 4)), round((target / bar_s - 8) / 8))
     bars_total = 8 + 8 * k
+    if os.environ.get('PB_KEEP_TEMPO') == '1':  # 保持原速：曲长由乐段数决定，不再为凑目标时长而改速度
+        target = bars_total * bar_s
     bpm = bars_total * meter * 60 / target
     cycle = ['A', 'B', 'A2', 'C', 'A3', 'B2']
     secs = [cycle[i % len(cycle)] for i in range(k)]
