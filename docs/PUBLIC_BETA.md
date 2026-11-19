@@ -134,7 +134,7 @@ npx wrangler d1 execute pixel-buddies --remote --command "SELECT json_extract(pr
 - 在线排行榜（没有后端，界面如实标注“仅本机 · 未验证”）；服务器日期；去广告权益。
 - 微信/抖音小游戏的公测：包能构建，但没有真机验证；小游戏端统计/反馈需要配置 `RELEASE.miniApiBase`（https 合法域名）才会启用。
 - 账号体系、跨设备同步（进度只在本机）。
-- 隐私政策里的开发者名称和联系邮箱是【占位符】，**公开前请替换**（`assets/scripts/config/PolicyText.ts`）。
+- 隐私政策里的开发者名称和联系邮箱已填（`assets/scripts/config/PolicyText.ts`）。
 
 ## 8. 已知问题与风险
 
